@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Racing Cart Audio Debugger</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        h1, h2, h3 {
+            color: #333;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
+        }
+        .debug-section {
+            margin-bottom: 30px;
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        button {
+            padding: 8px 15px;
+            margin: 5px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        input[type="range"] {
+            width: 150px;
+            margin: 0 10px;
+        }
+        #console {
+            height: 200px;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            padding: 10px;
+            background-color: #f0f0f0;
+            font-family: monospace;
+            margin-top: 20px;
+            white-space: pre-wrap;
+        }
+        .log { color: #333; }
+        .warn { color: #ff9800; }
+        .error { color: #f44336; }
+        .success { color: #4CAF50; }
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 10px;
+            margin: 15px 0;
+        }
+        details {
+            margin: 10px 0;
+        }
+        summary {
+            cursor: pointer;
+            padding: 5px;
+            background-color: #eee;
+        }
+        #current-audio-info {
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #e8f5e9;
+            border-left: 4px solid #4CAF50;
+        }
+        .path-test {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Racing Cart Audio Debugger</h1>
+    <p>This tool helps diagnose audio-related issues in the Racing Cart game.</p>
+    
+    <div class="debug-section">
+        <h2>Environment Information</h2>
+        <div id="env-info"></div>
+    </div>
+    
+    <div class="debug-section">
+        <h2>Audio Format Support</h2>
+        <div id="format-support"></div>
+    </div>
+    
+    <div class="debug-section">
+        <h2>Audio Testing</h2>
+        
+        <div class="path-test">
+            <h3>Standard Paths</h3>
+            <div class="test-grid">
+                <button onclick="testDirectPath('audio/dizzy_racing.mp3')">audio/dizzy_racing.mp3</button>
+                <button onclick="testDirectPath('audio/dizzy_racing.ogg')">audio/dizzy_racing.ogg</button>
+                <button onclick="testDirectPath('audio/dizzy_racing.m4a')">audio/dizzy_racing.m4a</button>
+                <button onclick="testDirectPath('audio/dizzy_racing.wav')">audio/dizzy_racing.wav</button>
+            </div>
+        </div>
+        
+        <div class="path-test">
+            <h3>Root-Relative Paths</h3>
+            <div class="test-grid">
+                <button onclick="testDirectPath('/audio/dizzy_racing.mp3')">/audio/dizzy_racing.mp3</button>
+                <button onclick="testDirectPath('/audio/dizzy_racing.ogg')">/audio/dizzy_racing.ogg</button>
+                <button onclick="testDirectPath('/audio/dizzy_racing.m4a')">/audio/dizzy_racing.m4a</button>
+                <button onclick="testDirectPath('/audio/dizzy_racing.wav')">/audio/dizzy_racing.wav</button>
+            </div>
+        </div>
+        
+        <div class="path-test">
+            <h3>Absolute Paths</h3>
+            <div class="test-grid" id="absolute-paths">
+                <!-- Dynamically filled -->
+            </div>
+        </div>
+        
+        <div class="path-test">
+            <h3>THREE.js Audio Testing</h3>
+            <button onclick="testThreeAudio()">Test THREE.Audio</button>
+            <button onclick="testRacingCartAudio()">Simulate Track.js Audio Loading</button>
+        </div>
+        
+        <div class="path-test">
+            <h3>Control Panel</h3>
+            <button onclick="stopAllAudio()">Stop All Audio</button>
+            <button onclick="clearConsole()">Clear Console</button>
+            
+            <div id="current-audio-info">
+                <p><strong>Currently Playing:</strong> <span id="current-audio">None</span></p>
+                <div id="volume-control" style="display: none;">
+                    <label for="volume-slider">Volume:</label>
+                    <input type="range" id="volume-slider" min="0" max="100" value="50">
+                    <span id="volume-value">50%</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="debug-section">
+        <h2>Debug Console</h2>
+        <div id="console"></div>
+    </div>
+    
+    <script>
+        // Global variables
+        let currentAudio = null;
+        const consoleEl = document.getElementById('console');
+        const baseUrl = window.location.origin;
+        
+        // Initialize environment info
+        function initEnvironmentInfo() {
+            const envInfo = document.getElementById('env-info');
+            const info = {
+                'User Agent': navigator.userAgent,
+                'Base URL': baseUrl,
+                'Protocol': window.location.protocol,
+                'Host': window.location.host,
+                'Pathname': window.location.pathname,
+                'Full URL': window.location.href,
+                'Audio Context Support': window.AudioContext || window.webkitAudioContext ? 'Yes' : 'No'
+            };
+            
+            let html = '<dl>';
+            for (const [key, value] of Object.entries(info)) {
+                html += `<dt><strong>${key}:</strong></dt><dd>${value}</dd>`;
+            }
+            html += '</dl>';
+            envInfo.innerHTML = html;
+            
+            log(`Environment loaded: ${baseUrl}`);
+            
+            // Fill absolute paths
+            const absolutePathsEl = document.getElementById('absolute-paths');
+            const formats = ['mp3', 'ogg', 'm4a', 'wav'];
+            formats.forEach(format => {
+                const button = document.createElement('button');
+                button.textContent = `${baseUrl}/audio/dizzy_racing.${format}`;
+                button.onclick = () => testDirectPath(`${baseUrl}/audio/dizzy_racing.${format}`);
+                absolutePathsEl.appendChild(button);
+            });
+        }
+        
+        // Initialize audio format support info
+        function initAudioFormatSupport() {
+            const audio = document.createElement('audio');
+            const formatSupport = document.getElementById('format-support');
+            
+            const formats = {
+                'MP3 (audio/mpeg)': audio.canPlayType('audio/mpeg'),
+                'OGG (audio/ogg)': audio.canPlayType('audio/ogg; codecs="vorbis"'),
+                'M4A (audio/mp4)': audio.canPlayType('audio/mp4; codecs="mp4a.40.2"'),
+                'WAV (audio/wav)': audio.canPlayType('audio/wav; codecs="1"')
+            };
+            
+            let html = '<table border="1" cellpadding="5" style="border-collapse: collapse; width: 100%;">';
+            html += '<tr><th>Format</th><th>Support Level</th><th>Status</th></tr>';
+            
+            for (const [format, support] of Object.entries(formats)) {
+                let status = '❌ Not Supported';
+                let color = '#f44336';
+                
+                if (support === 'probably') {
+                    status = '✅ Full Support';
+                    color = '#4CAF50';
+                } else if (support === 'maybe') {
+                    status = '⚠️ Partial Support';
+                    color = '#ff9800';
+                }
+                
+                html += `<tr>
+                    <td>${format}</td>
+                    <td>${support || 'no'}</td>
+                    <td style="color: ${color}">${status}</td>
+                </tr>`;
+            }
+            
+            html += '</table>';
+            formatSupport.innerHTML = html;
+            
+            log(`Audio format support detected: MP3: ${formats['MP3 (audio/mpeg)']}, OGG: ${formats['OGG (audio/ogg)']}`);
+        }
+        
+        // Console logging
+        function log(message, type = 'log') {
+            const now = new Date();
+            const timestamp = now.toTimeString().split(' ')[0] + '.' + now.getMilliseconds().toString().padStart(3, '0');
+            
+            const logEntry = document.createElement('div');
+            logEntry.className = type;
+            logEntry.textContent = `[${timestamp}] ${message}`;
+            consoleEl.appendChild(logEntry);
+            
+            // Auto-scroll to bottom
+            consoleEl.scrollTop = consoleEl.scrollHeight;
+            
+            // Also log to actual console
+            if (type === 'log') console.log(message);
+            else if (type === 'warn') console.warn(message);
+            else if (type === 'error') console.error(message);
+            else if (type === 'success') console.log('%c' + message, 'color: green');
+        }
+        
+        function clearConsole() {
+            consoleEl.innerHTML = '';
+            log('Console cleared');
+        }
+        
+        // Test direct path with HTML5 Audio
+        function testDirectPath(src) {
+            stopAllAudio();
+            log(`Testing direct path: ${src}`);
+            
+            const audio = new Audio();
+            currentAudio = audio;
+            
+            updateCurrentAudioInfo(src);
+            showVolumeControl();
+            
+            // Set volume from slider
+            const volumeSlider = document.getElementById('volume-slider');
+            audio.volume = volumeSlider.value / 100;
+            
+            audio.addEventListener('canplaythrough', () => {
+                log(`Successfully loaded: ${src}`, 'success');
+                
+                try {
+                    const playPromise = audio.play();
+                    
+                    if (playPromise !== undefined) {
+                        playPromise
+                            .then(() => {
+                                log(`Now playing: ${src}`, 'success');
+                            })
+                            .catch(error => {
+                                log(`Autoplay prevented: ${error.message}`, 'error');
+                            });
+                    }
+                } catch (error) {
+                    log(`Error playing audio: ${error.message}`, 'error');
+                }
+            }, { once: true });
+            
+            audio.addEventListener('error', () => {
+                const errorCode = audio.error ? audio.error.code : 'unknown';
+                let errorMessage = 'Unknown error';
+                
+                switch(errorCode) {
+                    case 1: errorMessage = 'MEDIA_ERR_ABORTED: Fetching process aborted'; break;
+                    case 2: errorMessage = 'MEDIA_ERR_NETWORK: Network error'; break;
+                    case 3: errorMessage = 'MEDIA_ERR_DECODE: Decoding error'; break;
+                    case 4: errorMessage = 'MEDIA_ERR_SRC_NOT_SUPPORTED: Source not found or not supported'; break;
+                }
+                
+                log(`Failed to load: ${src}. Error: ${errorMessage} (${errorCode})`, 'error');
+            }, { once: true });
+            
+            // Set source and load
+            audio.src = src;
+            audio.load();
+        }
+        
+        // Test THREE.js Audio
+        function testThreeAudio() {
+            log('THREE.js Audio testing is not implemented in this version', 'warn');
+            log('This would require loading the THREE.js library and is better tested in the game context', 'warn');
+        }
+        
+        // Simulate the Racing Cart audio loading logic
+        function testRacingCartAudio() {
+            log('Simulating Track.js audio loading logic...', 'log');
+            
+            // Get supported formats
+            const audio = document.createElement('audio');
+            const supportedFormats = {
+                mp3: audio.canPlayType('audio/mpeg'),
+                ogg: audio.canPlayType('audio/ogg; codecs="vorbis"'),
+                m4a: audio.canPlayType('audio/mp4; codecs="mp4a.40.2"'),
+                wav: audio.canPlayType('audio/wav; codecs="1"')
+            };
+            
+            log('Supported audio formats: ' + JSON.stringify(supportedFormats), 'log');
+            
+            // Define possible path patterns
+            const possiblePaths = [
+                // Relative paths
+                'audio/dizzy_racing.',
+                './audio/dizzy_racing.',
+                
+                // Root-relative paths 
+                '/audio/dizzy_racing.',
+                
+                // Absolute paths with origin
+                `${baseUrl}/audio/dizzy_racing.`,
+                
+                // With public prefix
+                'public/audio/dizzy_racing.',
+                '/public/audio/dizzy_racing.',
+                
+                // Absolute with origin and public prefix
+                `${baseUrl}/public/audio/dizzy_racing.`,
+                
+                // Try parent directory in case of nested deployment
+                '../audio/dizzy_racing.',
+            ];
+            
+            log('Testing paths: ' + JSON.stringify(possiblePaths), 'log');
+            
+            // Try all paths and formats systematically
+            tryNextPath(possiblePaths, 0, supportedFormats);
+        }
+        
+        function tryNextPath(paths, pathIndex, formats) {
+            if (pathIndex >= paths.length) {
+                log('Exhausted all paths without finding a working audio source', 'error');
+                log('Falling back to default: audio/dizzy_racing.mp3', 'warn');
+                testDirectPath('audio/dizzy_racing.mp3');
+                return;
+            }
+            
+            const basePath = paths[pathIndex];
+            log(`Trying path pattern: ${basePath}`, 'log');
+            
+            // Try each format with the current path
+            if (formats.ogg) {
+                tryFormat(basePath + 'ogg', paths, pathIndex, formats, 'ogg');
+            } else if (formats.m4a) {
+                tryFormat(basePath + 'm4a', paths, pathIndex, formats, 'm4a');
+            } else if (formats.mp3) {
+                tryFormat(basePath + 'mp3', paths, pathIndex, formats, 'mp3');
+            } else if (formats.wav) {
+                tryFormat(basePath + 'wav', paths, pathIndex, formats, 'wav');
+            } else {
+                // No supported formats, try next path
+                tryNextPath(paths, pathIndex + 1, formats);
+            }
+        }
+        
+        function tryFormat(src, paths, pathIndex, formats, currentFormat) {
+            log(`Testing ${currentFormat.toUpperCase()} format: ${src}`, 'log');
+            
+            const audio = new Audio();
+            
+            // Set a timeout to catch when loading hangs
+            const timeout = setTimeout(() => {
+                log(`Timeout loading: ${src}`, 'warn');
+                cleanupAndTryNext();
+            }, 3000);
+            
+            function cleanupAndTryNext() {
+                clearTimeout(timeout);
+                audio.removeEventListener('canplaythrough', successHandler);
+                audio.removeEventListener('error', errorHandler);
+                
+                // Remove current format from formats and try next format or path
+                const nextFormats = {...formats};
+                delete nextFormats[currentFormat];
+                
+                if (Object.keys(nextFormats).length > 0) {
+                    // Try next format with same path
+                    tryNextPath(paths, pathIndex, nextFormats);
+                } else {
+                    // Try next path
+                    tryNextPath(paths, pathIndex + 1, formats);
+                }
+            }
+            
+            function successHandler() {
+                clearTimeout(timeout);
+                log(`Success! Audio loaded: ${src}`, 'success');
+                
+                // We've found a working source, use it
+                stopAllAudio();
+                testDirectPath(src);
+            }
+            
+            function errorHandler() {
+                log(`Failed loading: ${src}`, 'warn');
+                cleanupAndTryNext();
+            }
+            
+            audio.addEventListener('canplaythrough', successHandler, { once: true });
+            audio.addEventListener('error', errorHandler, { once: true });
+            
+            audio.src = src;
+            audio.load();
+        }
+        
+        // Stop all playing audio
+        function stopAllAudio() {
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio = null;
+                updateCurrentAudioInfo('None');
+                hideVolumeControl();
+                log('Stopped all audio playback', 'log');
+            }
+        }
+        
+        // Update current audio info
+        function updateCurrentAudioInfo(source) {
+            document.getElementById('current-audio').textContent = source;
+        }
+        
+        // Show volume control
+        function showVolumeControl() {
+            const volumeControl = document.getElementById('volume-control');
+            volumeControl.style.display = 'block';
+            
+            // Set up volume slider
+            const volumeSlider = document.getElementById('volume-slider');
+            const volumeValue = document.getElementById('volume-value');
+            
+            volumeSlider.oninput = function() {
+                const volume = this.value;
+                volumeValue.textContent = `${volume}%`;
+                
+                if (currentAudio) {
+                    currentAudio.volume = volume / 100;
+                    log(`Volume set to ${volume}%`, 'log');
+                }
+            };
+        }
+        
+        // Hide volume control
+        function hideVolumeControl() {
+            document.getElementById('volume-control').style.display = 'none';
+        }
+        
+        // Initialize the page
+        window.onload = function() {
+            initEnvironmentInfo();
+            initAudioFormatSupport();
+            log('Audio Debug Tool loaded', 'success');
+        };
+    </script>
+</body>
+</html> 

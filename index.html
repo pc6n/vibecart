@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-4D6RZVPWM9"></script>
+    <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-4D6RZVPWM9');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="A 3D browser-based racing game built with Three.js">
+    <meta name="keywords" content="racing game, 3D game, browser game, Three.js">
+    <title>Vibe Cart</title>
+    <link rel="stylesheet" href="./src/styles.css">
+    <link rel="icon" type="image/png" href="./favicon.png">
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+            background: #1a1a1a;
+        }
+        #hud {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: 100;
+        }
+        #hud > * {
+            pointer-events: auto;
+        }
+        
+        /* Game controls */
+        .game-controls {
+            position: fixed;
+            top: 180px;
+            left: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 90;
+            min-width: 200px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        .game-controls.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .game-controls button {
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            transition: all 0.2s;
+            white-space: nowrap;
+            width: 100%;
+            text-align: left;
+            box-sizing: border-box;
+        }
+        .game-controls button:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+        #speed, #lap, #time {
+            font-size: 18px;
+            text-align: left;
+            padding: 10px 15px;
+            border-radius: 5px;
+            background-color: rgba(0, 0, 0, 0.7);
+            width: 100%;
+            box-sizing: border-box;
+        }
+        #lap {
+            font-size: 20px;
+            color: #00ff00;
+        }
+        #time {
+            color: #00ffff;
+        }
+        
+        /* Media queries for mobile responsiveness */
+        @media (max-width: 768px) {
+            #speed-boost-indicator {
+                bottom: 350px !important; /* Position higher on mobile to avoid overlap with controls */
+            }
+            
+            /* Landscape orientation */
+            @media (orientation: landscape) {
+                #speed-boost-indicator {
+                    bottom: auto !important;
+                    top: 20px !important;
+                    right: 20px !important;
+                    width: 50px !important;
+                    height: 50px !important;
+                }
+            }
+            
+            /* Small screens */
+            @media (max-width: 360px) {
+                #speed-boost-indicator {
+                    width: 50px !important;
+                    height: 50px !important;
+                }
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="hud"></div>
+    <!-- Speed boost indicator -->
+    <div id="speed-boost-indicator" style="position: fixed; bottom: 200px; right: 20px; width: 60px; height: 60px; background-color: rgba(0, 0, 0, 0.8); border: 3px solid gold; border-radius: 50%; display: flex; justify-content: center; align-items: center; z-index: 1000; pointer-events: none; opacity: 0; transition: opacity 0.3s, bottom 0.3s;">
+        <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiBmaWxsPSIjZmZjYjAwIj48cGF0aCBkPSJNMzAgNEwxNSAyNWgxMEwxNyA0NCAzOCAxOEgyNEwzMCA0eiIvPjwvc3ZnPg==" alt="Speed Boost" style="width: 60%; height: 60%; filter: drop-shadow(0 0 5px gold);">
+    </div>
+    <script src="./scripts/load-env.js"></script>
+    <script type="module" src="./src/js/main.js"></script>
+    <a target="_blank" href="https://jam.pieter.com" style="font-family: 'system-ui', sans-serif; position: fixed; bottom: -1px; right: -1px; padding: 7px; font-size: 14px; font-weight: bold; background: #fff; color: #000; text-decoration: none; z-index: 10; border-top-left-radius: 12px; z-index: 10000; border: 1px solid #fff;">🕹️ Vibe Jam 2025</a>
+    <script async src="https://scripts.simpleanalyticscdn.com/latest.js"></script>
+</body>
+</html> 
