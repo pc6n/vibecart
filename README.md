@@ -1,4 +1,4 @@
-# 🏎️ Racing Cart
+# 🏎️ Vibe Cart
 
 A 3D browser-based racing game built with Three.js, featuring multiplayer support, AI opponents, and realistic physics.
 
