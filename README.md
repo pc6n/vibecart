@@ -2,7 +2,7 @@
 
 A 3D browser-based racing game built with Three.js, featuring multiplayer support, AI opponents, and realistic physics.
 
-> **🎮 Vibejam Project**: This project was completely vibcoded and built during the Levlsio Vibejam! Built with passion, creativity, and lots of good vibes! ✨
+> **🎮 Vibejam Project**: This project was completely vibcoded and built during the vibejam initiated by levels.io!
 
 ![Racing Cart Screenshot](vibecart.png)
 
